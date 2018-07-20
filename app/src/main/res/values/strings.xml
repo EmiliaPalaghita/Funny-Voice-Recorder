@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Funny Voice Recorder</string>
+    <string name="play_record">Record</string>
+    <string name="all_records">All Records</string>
+    <string name="record">Record</string>
+    <string name="time">00:00:00</string>
+</resources>
