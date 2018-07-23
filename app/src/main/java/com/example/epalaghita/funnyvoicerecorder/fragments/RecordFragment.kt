@@ -16,19 +16,23 @@ import android.media.MediaPlayer
 import android.os.Environment
 import android.support.v4.app.ActivityCompat
 import kotlinx.android.synthetic.main.record_fragment.*
+import java.io.File
 import java.util.*
 
 
 class RecordFragment : Fragment() {
 
+    private val PATH = Environment.getExternalStorageDirectory().absolutePath + "/_audioDirectory/"
     private val LOG_TAG = "AudioRecordTest"
     private val REQUEST_RECORD_AUDIO_PERMISSION = 200
+    private val START_PLAY = "Start playing"
+    private val STOP_PLAY = "Stop playing"
+    private val START_RECORD = "Start recording"
+    private val STOP_RECORD = "Stop recording"
     private var mFileName: String? = Date().time.toString()
 
-    private var mRecordButton: RecordButton? = null
     private var mRecorder: MediaRecorder? = null
 
-    private val mPlayButton: PlayButton? = null
     private var mPlayer: MediaPlayer? = null
 
 
@@ -46,7 +50,7 @@ class RecordFragment : Fragment() {
 
     private fun startRecording() {
 
-        mFileName = Environment.getExternalStorageDirectory().absolutePath + Date().time.toString() + ".mp3"
+        mFileName = PATH + Date().time.toString() + ".mp3"
 
         mRecorder = MediaRecorder()
         mRecorder?.setAudioSource(MediaRecorder.AudioSource.MIC)
@@ -54,14 +58,15 @@ class RecordFragment : Fragment() {
         mRecorder?.setOutputFile(mFileName)
         mRecorder?.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
 
-        //TODO - try to solve the EACCES permission denied error
         try {
             mRecorder?.prepare()
         } catch (e: IOException) {
             Log.e(LOG_TAG, "prepare() failed")
+        } catch (e2: Exception) {
+            Log.e("EXCEPTIONS", e2.stackTrace.toString())
         }
+        Log.d("FILENAME", mFileName)
 
-        mRecorder?.prepare()
         mRecorder?.start()
     }
 
@@ -80,17 +85,24 @@ class RecordFragment : Fragment() {
     }
 
     private fun startPlaying() {
+        play_button.text = STOP_PLAY
         mPlayer = MediaPlayer()
         try {
             mPlayer?.setDataSource(mFileName)
             mPlayer?.prepare()
             mPlayer?.start()
+            mPlayer?.setOnCompletionListener {
+                stopPlaying()
+            }
         } catch (e: IOException) {
             Log.e(LOG_TAG, "prepare() failed")
         }
+
+
     }
 
     private fun stopPlaying() {
+        play_button.text = START_PLAY
         mPlayer?.release()
         mPlayer = null
     }
@@ -101,34 +113,27 @@ class RecordFragment : Fragment() {
         var clicker: OnClickListener = OnClickListener {
             onRecord(mStartRecording)
             if (mStartRecording) {
-                text = "Stop recording"
+                record_button.text = STOP_RECORD
             } else {
-                text = "Start recording"
+                record_button.text = START_RECORD
             }
             mStartRecording = !mStartRecording
         }
 
         init {
-            text = "Start recording"
+            record_button.text = START_RECORD
             setOnClickListener(clicker)
         }
     }
 
     internal inner class PlayButton(ctx: Context) : Button(ctx) {
-        private var mStartPlaying = true
 
-        private var clicker: View.OnClickListener = OnClickListener {
-            onPlay(mStartPlaying)
-            text = if (mStartPlaying) {
-                "Stop playing"
-            } else {
-                "Start playing"
-            }
-            mStartPlaying = !mStartPlaying
+        var clicker: View.OnClickListener = OnClickListener {
+            startPlaying()
         }
 
         init {
-            text = "Start playing"
+            play_button.text = START_PLAY
             setOnClickListener(clicker)
         }
     }
@@ -138,9 +143,12 @@ class RecordFragment : Fragment() {
 
         this.activity?.let { ActivityCompat.requestPermissions(it, arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE), REQUEST_RECORD_AUDIO_PERMISSION) }
 
-        //  TODO - create directory for all recordings
-        val dir: String = Environment.getExternalStorageDirectory().absolutePath + "/_audioDirectory"
+        val audioDirectory = File(PATH)
+        if (!audioDirectory.exists())
+            audioDirectory.mkdirs()
 
         record_button.setOnClickListener(context?.let { RecordButton(it).clicker })
+
+        play_button.setOnClickListener(context?.let { PlayButton(it).clicker })
     }
 }
