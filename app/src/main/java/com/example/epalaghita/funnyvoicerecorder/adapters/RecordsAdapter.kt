@@ -11,12 +11,15 @@ import android.widget.Button
 import android.widget.TextView
 import com.example.epalaghita.funnyvoicerecorder.R
 import com.example.epalaghita.funnyvoicerecorder.models.Record
+import com.example.epalaghita.funnyvoicerecorder.utils.RecordCallback
+import com.example.epalaghita.funnyvoicerecorder.utils.RecordPlayer
 import kotlinx.android.synthetic.main.record_list_item.view.*
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
 class RecordsAdapter(val items: ArrayList<Record>, val context: Context) : RecyclerView.Adapter<RecordsAdapter.ViewHolder>() {
+
     override fun onCreateViewHolder(p0: ViewGroup, p1: Int): ViewHolder {
         return ViewHolder(LayoutInflater.from(context).inflate(R.layout.record_list_item, p0, false))
     }
@@ -30,32 +33,36 @@ class RecordsAdapter(val items: ArrayList<Record>, val context: Context) : Recyc
         val format: DateFormat = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss", Locale.ENGLISH)
         val inputDate: String = format.format(recordName)
 
-        holder.tvRecord.text = inputDate
-
-        holder.btnPlay.setOnClickListener { playRecord(holder, position) }
-
+        holder.bind(inputDate, items[position].name)
     }
 
-    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
         // Holds the TextView that will add each animal to
-        val tvRecord: TextView = view.record_textView
-        val btnPlay: Button = view.play_record_button
-    }
+        private val tvRecord: TextView = view.record_textView
+        private val btnPlay: Button = view.play_record_button
+        private var recordName: String? = null
 
-    private fun playRecord(holder: ViewHolder, pos: Int) {
-        holder.btnPlay.setBackgroundResource(R.drawable.microphone_record)
+        init {
+            btnPlay.setOnClickListener{playRecord()}
+        }
 
-        val path = Environment.getExternalStorageDirectory().absolutePath + "/_audioDirectory/" + items[pos].name
+        fun bind(message: String, recordName: String) {
+            tvRecord.text = message
+            this.recordName = recordName
+        }
 
-        var mPlayer: MediaPlayer? = MediaPlayer()
-        mPlayer?.setDataSource(path)
-        mPlayer?.prepare()
-        mPlayer?.start()
-        mPlayer?.setOnCompletionListener {
-            mPlayer?.release()
-            mPlayer = null
+        private fun playRecord() {
+             btnPlay.setBackgroundResource(R.drawable.microphone_record)
 
-            holder.btnPlay.setBackgroundResource(R.drawable.microphone)
+             val path = Environment.getExternalStorageDirectory().absolutePath + "/_audioDirectory/" + recordName
+
+             RecordPlayer.playRecord(path, object : RecordCallback {
+                 override fun onMediaPlayerFinished() {
+                     // do the magic
+                     btnPlay.setBackgroundResource(R.drawable.microphone)
+
+                 }
+             })
         }
     }
 }

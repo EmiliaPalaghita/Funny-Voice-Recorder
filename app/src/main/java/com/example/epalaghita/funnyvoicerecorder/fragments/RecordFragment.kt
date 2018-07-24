@@ -16,6 +16,9 @@ import android.media.MediaPlayer
 import android.os.Environment
 import android.os.SystemClock
 import android.support.v4.app.ActivityCompat
+import android.widget.Toast
+import com.example.epalaghita.funnyvoicerecorder.utils.RecordCallback
+import com.example.epalaghita.funnyvoicerecorder.utils.RecordPlayer
 import kotlinx.android.synthetic.main.record_fragment.*
 import java.io.File
 import java.util.*
@@ -23,7 +26,6 @@ import java.util.*
 
 class RecordFragment : Fragment() {
 
-    private val PATH = Environment.getExternalStorageDirectory().absolutePath + "/_audioDirectory/"
     private val LOG_TAG = "AudioRecordTest"
     private val REQUEST_RECORD_AUDIO_PERMISSION = 200
     private val START_PLAY = "Start playing"
@@ -31,11 +33,6 @@ class RecordFragment : Fragment() {
     private val START_RECORD = "Start recording"
     private val STOP_RECORD = "Stop recording"
     private var mFileName: String? = ""
-
-    private var mRecorder: MediaRecorder? = null
-
-    private var mPlayer: MediaPlayer? = null
-
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.record_fragment, container, false)
@@ -50,26 +47,12 @@ class RecordFragment : Fragment() {
     }
 
     private fun startRecording() {
-
         record_button.setBackgroundResource(R.drawable.button_states_red)
 
-        mFileName = PATH + Date().time.toString() + ".mp3"
+        mFileName = RecordPlayer.PATH + Date().time.toString() + ".mp3"
+        val path: String = mFileName as String
 
-        mRecorder?.setAudioSource(MediaRecorder.AudioSource.MIC)
-        mRecorder?.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-        mRecorder?.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-        mRecorder?.setOutputFile(mFileName)
-
-        try {
-            mRecorder?.prepare()
-        } catch (e: IOException) {
-            Log.e(LOG_TAG, "prepare() failed")
-        } catch (e2: Exception) {
-            Log.e("EXCEPTIONS", e2.stackTrace.toString())
-        }
-        Log.d("FILENAME", mFileName)
-
-        mRecorder?.start()
+        RecordPlayer.startRecording(path)
 
         chronometer1.start()
         chronometer1.base = SystemClock.elapsedRealtime()
@@ -78,38 +61,30 @@ class RecordFragment : Fragment() {
 
     private fun stopRecording() {
         record_button.setBackgroundResource(R.drawable.button_states)
-
-        mRecorder?.stop()
-        mRecorder?.reset()
+        RecordPlayer.stopRecording()
 
         chronometer1.stop()
         chronometer1.base = SystemClock.elapsedRealtime()
     }
 
-    private fun startPlaying() {
+    private fun playRecord() {
         play_button.text = STOP_PLAY
-        mPlayer = MediaPlayer()
         try {
-            mPlayer?.setDataSource(mFileName)
-            mPlayer?.prepare()
-            mPlayer?.start()
-            mPlayer?.setOnCompletionListener {
-                stopPlaying()
-            }
-        } catch (e: IOException) {
-            Log.e(LOG_TAG, "prepare() failed")
+            val path: String = this.mFileName!!
+            RecordPlayer.playRecord(path, object : RecordCallback {
+                override fun onMediaPlayerFinished() {
+                    play_button.text = START_PLAY
+                }
+
+            })
+        } catch (e: Exception) {
+            Toast.makeText(this.context, "Try recording first!", Toast.LENGTH_SHORT).show()
         }
-
     }
 
-    private fun stopPlaying() {
-        play_button.text = START_PLAY
-        mPlayer?.release()
-        mPlayer = null
-    }
 
     internal inner class RecordButton(ctx: Context) : Button(ctx) {
-        var mStartRecording = true
+        private var mStartRecording = true
 
         var clicker: OnClickListener = OnClickListener {
             onRecord(mStartRecording)
@@ -122,7 +97,6 @@ class RecordFragment : Fragment() {
         }
 
         init {
-            record_button.text = START_RECORD
             setOnClickListener(clicker)
         }
     }
@@ -136,21 +110,28 @@ class RecordFragment : Fragment() {
                     REQUEST_RECORD_AUDIO_PERMISSION)
         }
 
-        play_button.text = START_PLAY
+        createUI()
 
-        mRecorder = MediaRecorder()
-
-        val audioDirectory = File(PATH)
-        if (!audioDirectory.exists())
-            audioDirectory.mkdirs()
+        createAudioDirectory()
 
         record_button.setOnClickListener(context?.let { RecordButton(it).clicker })
 
-        play_button.setOnClickListener { startPlaying() }
+        play_button.setOnClickListener { playRecord() }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mRecorder?.release()
+        RecordPlayer.destroyRecorder()
+    }
+
+    private fun createUI() {
+        play_button.text = START_PLAY
+        record_button.text = START_RECORD
+    }
+
+    private fun createAudioDirectory() {
+        val audioDirectory = File(RecordPlayer.PATH)
+        if (!audioDirectory.exists())
+            audioDirectory.mkdirs()
     }
 }
