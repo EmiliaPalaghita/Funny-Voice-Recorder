@@ -26,7 +26,6 @@ import java.util.*
 
 class RecordFragment : Fragment() {
 
-    private val LOG_TAG = "AudioRecordTest"
     private val REQUEST_RECORD_AUDIO_PERMISSION = 200
     private val START_PLAY = "Start playing"
     private val STOP_PLAY = "Stop playing"
@@ -38,16 +37,22 @@ class RecordFragment : Fragment() {
         return inflater.inflate(R.layout.record_fragment, container, false)
     }
 
-    private fun onRecord(start: Boolean) {
-        if (start) {
+    private fun onRecord() {
+
+        if (RecordPlayer.startRecording) {
             startRecording()
+
         } else {
             stopRecording()
         }
+
+        RecordPlayer.switchRecordingBool()
+
     }
 
     private fun startRecording() {
         record_button.setBackgroundResource(R.drawable.button_states_red)
+        record_button.text = STOP_RECORD
 
         mFileName = RecordPlayer.PATH + Date().time.toString() + ".mp3"
         val path: String = mFileName as String
@@ -56,11 +61,11 @@ class RecordFragment : Fragment() {
 
         chronometer1.start()
         chronometer1.base = SystemClock.elapsedRealtime()
-
     }
 
     private fun stopRecording() {
         record_button.setBackgroundResource(R.drawable.button_states)
+        record_button.text = START_RECORD
         RecordPlayer.stopRecording()
 
         chronometer1.stop()
@@ -82,25 +87,6 @@ class RecordFragment : Fragment() {
         }
     }
 
-
-    internal inner class RecordButton(ctx: Context) : Button(ctx) {
-        private var mStartRecording = true
-
-        var clicker: OnClickListener = OnClickListener {
-            onRecord(mStartRecording)
-            if (mStartRecording) {
-                record_button.text = STOP_RECORD
-            } else {
-                record_button.text = START_RECORD
-            }
-            mStartRecording = !mStartRecording
-        }
-
-        init {
-            setOnClickListener(clicker)
-        }
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -114,7 +100,7 @@ class RecordFragment : Fragment() {
 
         createAudioDirectory()
 
-        record_button.setOnClickListener(context?.let { RecordButton(it).clicker })
+        record_button.setOnClickListener { onRecord() }
 
         play_button.setOnClickListener { playRecord() }
     }

@@ -16,7 +16,7 @@ object RecordPlayer {
 
     var mPlayer: MediaPlayer? = null
     var startRecording: Boolean = true
-    var mRecorder: MediaRecorder = MediaRecorder()
+    var mRecorder: MediaRecorder? = null
 
     fun playRecord(path: String, completion: RecordCallback) {
         mPlayer = MediaPlayer()
@@ -31,28 +31,37 @@ object RecordPlayer {
     }
 
     fun startRecording(path: String) {
-        mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC)
-        mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-        mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-        mRecorder.setOutputFile(path)
+        if (mRecorder == null)
+            mRecorder = MediaRecorder()
+        mRecorder?.setAudioSource(MediaRecorder.AudioSource.MIC)
+        mRecorder?.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+        mRecorder?.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+        mRecorder?.setOutputFile(path)
 
         try {
-            mRecorder.prepare()
+            mRecorder?.prepare()
         } catch (e: IOException) {
             Log.e("AudioRecordTest", "prepare() failed")
         } catch (e2: Exception) {
             Log.e("EXCEPTIONS", e2.stackTrace.toString())
         }
 
-        mRecorder.start()
+        mRecorder?.start()
     }
 
     fun destroyRecorder() {
-        mRecorder.release()
+        mRecorder?.release()
     }
 
     fun stopRecording() {
-        mRecorder.stop()
-        mRecorder.reset()
+        mRecorder?.stop()
+        mRecorder?.reset()
+    }
+
+    fun switchRecordingBool() {
+        startRecording = when (startRecording) {
+            true -> false
+            else -> true
+        }
     }
 }
