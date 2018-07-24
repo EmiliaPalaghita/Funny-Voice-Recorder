@@ -32,7 +32,7 @@ class RecordsAdapter(val items: ArrayList<Record>, val context: Context) : Recyc
 
         holder.tvRecord.text = inputDate
 
-        holder.btnPlay.setOnClickListener {playRecord(holder, position)}
+        holder.btnPlay.setOnClickListener { playRecord(holder, position) }
 
     }
 
@@ -43,14 +43,18 @@ class RecordsAdapter(val items: ArrayList<Record>, val context: Context) : Recyc
     }
 
     private fun playRecord(holder: ViewHolder, pos: Int) {
-        val path = Environment.getExternalStorageDirectory().absolutePath + "/_audioDirectory/" + items[pos].name
-        var mPlayer: MediaPlayer? = MediaPlayer()
         holder.btnPlay.setBackgroundResource(R.drawable.microphone_record)
+
+        val path = Environment.getExternalStorageDirectory().absolutePath + "/_audioDirectory/" + items[pos].name
+
+        var mPlayer: MediaPlayer? = MediaPlayer()
         mPlayer?.setDataSource(path)
+        mPlayer?.prepare()
         mPlayer?.start()
         mPlayer?.setOnCompletionListener {
             mPlayer?.release()
             mPlayer = null
+
             holder.btnPlay.setBackgroundResource(R.drawable.microphone)
         }
     }
