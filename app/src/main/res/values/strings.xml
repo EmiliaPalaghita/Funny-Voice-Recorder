@@ -4,4 +4,5 @@
     <string name="all_records">All Records</string>
     <string name="record">Record</string>
     <string name="time">00:00:00</string>
+    <string name="_00_00">00:00</string>
 </resources>
