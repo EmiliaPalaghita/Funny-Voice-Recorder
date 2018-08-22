@@ -1,28 +1,26 @@
 package com.example.epalaghita.funnyvoicerecorder.fragments
 
 import android.Manifest
-import android.content.Context
-import android.media.MediaRecorder
+import android.os.AsyncTask
 import android.os.Bundle
+import android.os.SystemClock
+import android.support.v4.app.ActivityCompat
 import android.support.v4.app.Fragment
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import com.example.epalaghita.funnyvoicerecorder.R
-import java.io.IOException
-import android.media.MediaPlayer
-import android.os.AsyncTask
-import android.os.Environment
-import android.os.SystemClock
-import android.support.v4.app.ActivityCompat
 import android.widget.Toast
+import com.example.epalaghita.funnyvoicerecorder.R
 import com.example.epalaghita.funnyvoicerecorder.soundtouch.SoundTouch
 import com.example.epalaghita.funnyvoicerecorder.utils.RecordCallback
 import com.example.epalaghita.funnyvoicerecorder.utils.RecordPlayer
 import com.example.epalaghita.funnyvoicerecorder.utils.RecordPlayer.PATH
-import kotlinx.android.synthetic.main.record_fragment.*
+import kotlinx.android.synthetic.main.record_fragment.chronometer1
+import kotlinx.android.synthetic.main.record_fragment.pitch_editText
+import kotlinx.android.synthetic.main.record_fragment.play_button
+import kotlinx.android.synthetic.main.record_fragment.record_button
+import kotlinx.android.synthetic.main.record_fragment.speed_editText
 import java.io.File
 import java.util.*
 
@@ -64,8 +62,6 @@ class RecordFragment : Fragment() {
 
         RecordPlayer.startRecording(path)
 
-//        RecordPlayer.startRecordingWithAudioRecord(path)
-
         chronometer1.start()
         chronometer1.base = SystemClock.elapsedRealtime()
     }
@@ -81,9 +77,7 @@ class RecordFragment : Fragment() {
         chronometer1.stop()
         chronometer1.base = SystemClock.elapsedRealtime()
 
-//        RecordPlayer.stopRecordingWithAudioRecord()
-
-//        processRecording(pitch, speed)
+        processRecording(pitch, speed)
     }
 
     private fun processRecording(pitch: Int, speed: Int) {
@@ -99,32 +93,44 @@ class RecordFragment : Fragment() {
         processTask.execute(params)
     }
 
-    class ProcessTask : AsyncTask<ProcessTask.Parameters, Int, Long>() {
-
+    class ProcessTask : AsyncTask<ProcessTask.Parameters, Int, ProcessTask.Parameters?>() {
 
         inner class Parameters {
             var input: String? = ""
             var output: String = ""
-            var speed = 100
+            var speed = 1
             var pitch = 0
         }
 
-        private fun doSoundTouchProcessing(params: Parameters): Long {
+        private fun doSoundTouchProcessing(params: Parameters): Parameters? {
             val st = SoundTouch()
             st.setPitchSemiTones(params.pitch.toFloat())
-            st.setSpeed(params.speed.toFloat())
+            st.setSpeed(params.speed.toFloat() / 100)
             val res = st.processFile(params.input, params.output)
 
             if (res != 0) {
                 Log.e("FAILURE AT PROCESSING", SoundTouch.getErrorString())
-                return -1L
+                return null
             }
 
-            return 0L
+            return params
         }
 
-        override fun doInBackground(vararg p0: Parameters): Long {
+        override fun doInBackground(vararg p0: Parameters): Parameters? {
             return doSoundTouchProcessing(p0[0])
+        }
+
+        override fun onPostExecute(params: Parameters?) {
+            super.onPostExecute(params)
+
+            val deletedFile = File(params?.input)
+            if (deletedFile.exists()) {
+                deletedFile.canonicalFile.delete()
+            }
+
+            val from = File(params?.output)
+            val to = File(params?.input)
+            from.renameTo(to)
         }
     }
 

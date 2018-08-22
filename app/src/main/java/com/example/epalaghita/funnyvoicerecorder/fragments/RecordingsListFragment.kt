@@ -26,8 +26,8 @@ class RecordingsListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        //TODO - update recycler view every time a new recording is created
-        addFiles()
+        //TODO - update recycler view every time a new recording is created and see why it fails when calling addFiles()
+//        addFiles()
 
         records_recycler_view.layoutManager = LinearLayoutManager(this.context)
 
@@ -41,7 +41,7 @@ class RecordingsListFragment : Fragment() {
 
         val files = audioDirectory.listFiles()
 
-        files.forEach { records.add(Record(it)) }
+        files?.forEach { records.add(Record(it)) }
 
     }
 }
