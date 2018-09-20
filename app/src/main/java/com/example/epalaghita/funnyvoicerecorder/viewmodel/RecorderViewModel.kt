@@ -8,6 +8,7 @@ import android.media.MediaRecorder
 import android.os.Environment
 import android.util.Log
 import com.example.epalaghita.funnyvoicerecorder.soundtouch.SoundTouch
+import com.example.epalaghita.funnyvoicerecorder.utils.RecordCallback
 import io.reactivex.Completable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -20,6 +21,9 @@ import omrecorder.Recorder
 import omrecorder.WriteAction
 import java.io.File
 
+interface RecordCallback {
+    fun onMediaPlayerFinished()
+}
 
 class SoundTouchException(override var message: String) : Exception(message)
 
@@ -70,12 +74,12 @@ class RecorderViewModel(application: Application) : AndroidViewModel(application
         recorder.startRecording()
     }
 
-    private fun playFile() {
+    private fun playFile(completion: RecordCallback) {
         mediaPlayer.setDataSource(readFile.path)
         mediaPlayer.prepare()
         mediaPlayer.setOnCompletionListener {
+            completion.onMediaPlayerFinished()
             mediaPlayer.reset()
-            startRecording()
         }
         mediaPlayer.start()
     }
@@ -107,14 +111,14 @@ class RecorderViewModel(application: Application) : AndroidViewModel(application
         disposable.clear()
     }
 
-    fun playRecord() {
+    fun playRecord(completion: RecordCallback) {
         disposable.add(
                 processFile()
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(
                                 {
-                                    playFile()
+                                    playFile(completion)
                                 },
                                 {
                                     handleError()

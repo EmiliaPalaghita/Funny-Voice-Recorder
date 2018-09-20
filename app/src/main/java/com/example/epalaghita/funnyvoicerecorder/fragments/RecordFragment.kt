@@ -1,6 +1,7 @@
 package com.example.epalaghita.funnyvoicerecorder.fragments
 
 import android.Manifest
+import android.arch.lifecycle.ViewModelProviders
 import android.os.AsyncTask
 import android.os.Bundle
 import android.os.SystemClock
@@ -16,6 +17,7 @@ import com.example.epalaghita.funnyvoicerecorder.soundtouch.SoundTouch
 import com.example.epalaghita.funnyvoicerecorder.utils.RecordCallback
 import com.example.epalaghita.funnyvoicerecorder.utils.RecordPlayer
 import com.example.epalaghita.funnyvoicerecorder.utils.RecordPlayer.PATH
+import com.example.epalaghita.funnyvoicerecorder.viewmodel.RecorderViewModel
 import kotlinx.android.synthetic.main.record_fragment.chronometer1
 import kotlinx.android.synthetic.main.record_fragment.pitch_editText
 import kotlinx.android.synthetic.main.record_fragment.play_button
@@ -33,6 +35,7 @@ class RecordFragment : Fragment() {
     private val START_RECORD = "Start recording"
     private val STOP_RECORD = "Stop recording"
     private var mFileName: String? = ""
+    private lateinit var viewModel : RecorderViewModel
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.record_fragment, container, false)
@@ -60,7 +63,9 @@ class RecordFragment : Fragment() {
         val path: String = mFileName as String
         Log.d("FILENAME", mFileName)
 
-        RecordPlayer.startRecording(path)
+//        RecordPlayer.startRecording(path)
+        viewModel.startRecording()
+
 
         chronometer1.start()
         chronometer1.base = SystemClock.elapsedRealtime()
@@ -72,12 +77,13 @@ class RecordFragment : Fragment() {
 
         record_button.setBackgroundResource(R.drawable.button_states)
         record_button.text = START_RECORD
-        RecordPlayer.stopRecording()
+//        RecordPlayer.stopRecording()
+        viewModel.stopRecording()
 
         chronometer1.stop()
         chronometer1.base = SystemClock.elapsedRealtime()
 
-        processRecording(pitch, speed)
+//        processRecording(pitch, speed)
     }
 
     private fun processRecording(pitch: Int, speed: Int) {
@@ -139,7 +145,13 @@ class RecordFragment : Fragment() {
         play_button.text = STOP_PLAY
         try {
             val path: String = this.mFileName!!
-            RecordPlayer.playRecord(path, object : RecordCallback {
+//            RecordPlayer.playRecord(path, object : RecordCallback {
+//                override fun onMediaPlayerFinished() {
+//                    play_button.text = START_PLAY
+//                }
+//
+//            })
+            viewModel.playRecord( object : RecordCallback {
                 override fun onMediaPlayerFinished() {
                     play_button.text = START_PLAY
                 }
@@ -165,6 +177,8 @@ class RecordFragment : Fragment() {
         createUI()
 
         createAudioDirectory()
+
+        viewModel = ViewModelProviders.of(this).get(RecorderViewModel::class.java)
 
         record_button.setOnClickListener { onRecord() }
 
